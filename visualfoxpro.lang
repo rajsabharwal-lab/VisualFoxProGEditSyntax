@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Visual FoxPro (VFP) language definition for GtkSourceView / gedit
+
+  Covers: .prg  .mpr  .spr  .qpr
+  Handles: case-insensitivity, && and * and NOTE comments, ; line continuation,
+           "..." and '...' strings, TEXT...ENDTEXT blocks, {^date} literals,
+           .T. .F. .NULL. .AND. .OR. .NOT., #DEFINE/#INCLUDE/#IF preprocessor,
+           &macro substitution, DEFINE CLASS / FUNCTION / PROCEDURE names,
+           built-in functions (highlighted only when followed by "("),
+           commands, SQL words, base classes, THIS/THISFORM, system variables.
+
+  Not handled: [bracket] strings (ambiguous with array subscripts) and
+  4-letter command abbreviations (e.g. REPL, SELE) other than a few common ones.
+-->
+<language id="foxpro" _name="Visual FoxPro" version="2.0" _section="Source">
+
+  <metadata>
+    <property name="mimetypes">text/x-foxpro</property>
+    <property name="globs">*.prg;*.PRG;*.Prg;*.mpr;*.MPR;*.spr;*.SPR;*.qpr;*.QPR</property>
+    <property name="line-comment-start">&amp;&amp;</property>
+  </metadata>
+
+  <styles>
+    <style id="comment"       _name="Comment"             map-to="def:comment"/>
+    <style id="string"        _name="String"              map-to="def:string"/>
+    <style id="text-block"    _name="TEXT...ENDTEXT"      map-to="def:string"/>
+    <style id="preprocessor"  _name="Preprocessor"        map-to="def:preprocessor"/>
+    <style id="date"          _name="Date/Time Literal"   map-to="def:constant"/>
+    <style id="boolean"       _name="Logical Constant"    map-to="def:boolean"/>
+    <style id="null"          _name="Null"                map-to="def:special-constant"/>
+    <style id="keyword"       _name="Keyword"             map-to="def:keyword"/>
+    <style id="command"       _name="Command"             map-to="def:statement"/>
+    <style id="function"      _name="Function"            map-to="def:function"/>
+    <style id="type"          _name="Class"               map-to="def:type"/>
+    <style id="builtin-var"   _name="Built-in Object"     map-to="def:special-constant"/>
+    <style id="number"        _name="Number"              map-to="def:decimal"/>
+    <style id="hex"           _name="Hexadecimal"         map-to="def:base-n-integer"/>
+    <style id="macro"         _name="Macro Substitution"  map-to="def:special-char"/>
+    <style id="continuation"  _name="Line Continuation"   map-to="def:special-char"/>
+    <style id="operator"      _name="Operator"            map-to="def:operator"/>
+  </styles>
+
+  <definitions>
+
+    <!-- ===================== Comments ===================== -->
+
+    <context id="line-comment" style-ref="comment" end-at-line-end="true"
+             class="comment" class-disabled="no-spell-check">
+      <start>&amp;&amp;</start>
+      <include>
+        <context ref="def:in-line-comment"/>
+      </include>
+    </context>
+
+    <context id="star-comment" style-ref="comment" end-at-line-end="true"
+             class="comment" class-disabled="no-spell-check">
+      <start>^[ \t\x{FEFF}\x{A0}]*\*</start>
+      <include>
+        <context ref="def:in-line-comment"/>
+      </include>
+    </context>
+
+    <context id="note-comment" style-ref="comment" end-at-line-end="true"
+             class="comment" class-disabled="no-spell-check">
+      <start>(?i)^[ \t]*note(?=[ \t]|$)(?![ \t]*=)</start>
+      <include>
+        <context ref="def:in-line-comment"/>
+      </include>
+    </context>
+
+    <!-- ===================== Strings ===================== -->
+
+    <context id="string-double" style-ref="string" end-at-line-end="true"
+             class="string" class-disabled="no-spell-check">
+      <start>"</start>
+      <end>"</end>
+    </context>
+
+    <context id="string-single" style-ref="string" end-at-line-end="true"
+             class="string" class-disabled="no-spell-check">
+      <start>'</start>
+      <end>'</end>
+    </context>
+
+    <context id="text-block" style-ref="text-block" class="string"
+             class-disabled="no-spell-check">
+      <start>(?i)^[ \t]*text(?=[ \t]|$)(?![ \t]*=)</start>
+      <end>(?i)^[ \t]*endtext\b</end>
+    </context>
+
+    <!-- ===================== Preprocessor ===================== -->
+
+    <context id="preprocessor" style-ref="preprocessor">
+      <match>(?i)^[ \t]*#[ \t]*(?:define|undef|ifdef|ifndef|if|elif|else|endif|include|wait|readclauses|itsexpression)\b</match>
+    </context>
+
+    <!-- ===================== Literals ===================== -->
+
+    <!-- {^2024-01-31}  {^2024-01-31 10:30:00 AM}  {}  -->
+    <context id="date-literal" style-ref="date">
+      <match>\{\^?[0-9\-/:., a-zA-Z]*\}</match>
+    </context>
+
+    <context id="logical-constant" style-ref="boolean">
+      <match>(?i)\.(?:t|f|y|n)\.</match>
+    </context>
+
+    <context id="null-constant" style-ref="null">
+      <match>(?i)\.null\.|(?&lt;![\w.])null(?!\w)</match>
+    </context>
+
+    <context id="logical-operator" style-ref="keyword">
+      <match>(?i)\.(?:and|or|not)\.|(?&lt;![\w.])(?:and|or|not)(?!\w)</match>
+    </context>
+
+    <context id="hex-number" style-ref="hex">
+      <match>(?i)(?&lt;![\w.])0x[0-9a-f]+(?!\w)</match>
+    </context>
+
+    <context id="number" style-ref="number">
+      <match>(?i)(?&lt;![\w.])(?:[0-9]+\.?[0-9]*(?:e[+-]?[0-9]+)?|\.[0-9]+)(?!\w)</match>
+    </context>
+
+    <!-- ===================== Definitions ===================== -->
+
+    <!-- DEFINE CLASS MyClass AS Form -->
+    <context id="class-definition">
+      <match>(?i)\b(define\s+class)\s+(\w+)(?:\s+(as)\s+(\w+))?</match>
+      <include>
+        <context sub-pattern="1" style-ref="keyword"/>
+        <context sub-pattern="2" style-ref="type"/>
+        <context sub-pattern="3" style-ref="keyword"/>
+        <context sub-pattern="4" style-ref="type"/>
+      </include>
+    </context>
+
+    <!-- FUNCTION name / PROCEDURE name -->
+    <context id="function-definition">
+      <match>(?i)(?&lt;![\w.])(function|procedure)\s+(\w+(?:\.\w+)?)</match>
+      <include>
+        <context sub-pattern="1" style-ref="keyword"/>
+        <context sub-pattern="2" style-ref="function"/>
+      </include>
+    </context>
+
+    <!-- ===================== Built-in functions ===================== -->
+    <!-- Only highlighted when followed by "(" so that e.g. a field named
+         "date" or "type" is not coloured as a function. -->
+    <context id="functions" style-ref="function" class="no-spell-check">
+      <match extended="true">
+        (?i)(?&lt;![\w.])(?:
+        abs|acos|adatabases|adbobjects|adir|aerror|afields|afont|agetclass|
+        ainstance|alen|alines|alltrim|amembers|amouseobj|anetresources|ansitooem|
+        aprinters|ascan|aselobj|asc|asin|asort|asubscript|at|atan|atc|atcc|
+        atcline|atline|atn2|aused|avcxclasses|barcount|barprompt|between|
+        bindevent|bintoc|bitand|bitclear|bitlshift|bitnot|bitor|bitrshift|
+        bitset|bittest|bitxor|bof|candidate|capslock|cast|cdow|ceiling|chr|
+        chrtran|chrtranc|cmonth|cntbar|cntpad|col|comarray|comclassinfo|
+        compobj|comprop|cpconvert|cpcurrent|cpdbf|createbinary|createobject|
+        createobjectex|createoffline|ctobin|ctod|ctot|curdir|cursorgetprop|
+        cursorsetprop|cursortoxml|curval|date|datetime|day|dbc|dbf|dbgetprop|
+        dbsetprop|dbused|deleted|descending|difference|directory|diskspace|
+        dispobj|dmy|dodefault|dow|drivetype|dropoffline|dtoc|dtor|dtos|dtot|
+        empty|eof|error|evaluate|evl|exp|fchsize|fclose|fcount|fcreate|fdate|
+        feof|ferror|fflush|fgets|field|file|filetostr|filter|fklabel|fldlist|
+        flock|floor|fontmetric|fopen|forceext|forcepath|found|fputs|fread|
+        fseek|fsize|ftime|fullpath|fv|fwrite|getbar|getcolor|getcp|getcursor|
+        getdir|getenv|getexpr|getfile|getfldstate|gethost|getnextmodified|
+        getobject|getpad|getpem|getpict|getprinter|getwordcount|getwordnum|
+        gomonth|hour|idxcollate|iif|imestatus|indbc|indexseek|inkey|inlist|
+        insmode|int|isalpha|isblank|iscolor|isdigit|isexclusive|isflocked|
+        ishosted|isleadbyte|islower|ismouse|isnull|isreadonly|isrlocked|
+        isupper|justdrive|justext|justfname|justpath|juststem|keymatch|
+        lastkey|left|leftc|len|lenc|like|likec|lineno|loadpicture|lockfile|
+        log|log10|lookup|lower|ltrim|lupdate|max|mcol|mdown|mdx|mdy|memlines|
+        menu|messagebox|min|minute|mline|mod|month|mrkbar|mrkpad|mton|
+        mwindow|ndx|newobject|normalize|ntom|numlines|nvl|objnum|objtoclient|
+        objvar|occurs|oemtoansi|oldval|order|os|pad|padc|padl|padr|payment|
+        pcol|pcount|pemstatus|pi|popup|primary|printstatus|prmbar|prmpad|
+        program|prompt|proper|prow|prtinfo|putfile|pv|raiseevent|rand|rat|
+        ratc|ratline|rdlevel|readkey|reccount|recno|recsize|refresh|relation|
+        replicate|requery|rgb|rgbscheme|right|rightc|rlock|round|row|rtod|
+        rtrim|sec|seconds|seek|select|set|setfldstate|setresultset|sign|sin|
+        skpbar|skppad|soundex|space|sqlcancel|sqlcolumns|sqlcommit|sqlconnect|
+        sqldisconnect|sqlexec|sqlgetprop|sqlmoreresults|sqlprepare|
+        sqlrollback|sqlsetprop|sqlstringconnect|sqltables|sqrt|srows|str|
+        strconv|strextract|streval|strtofile|strtran|stuff|stuffc|substr|
+        substrc|sys|sysmetric|tablerevert|tableupdate|tag|tagcount|tagno|tan|
+        target|time|transform|trim|ttoc|ttod|txnlevel|txtwidth|type|
+        unbindevents|unique|updated|upper|used|val|varread|vartype|version|
+        wborder|wchild|wcols|wdockable|wexist|wfont|wlast|wlcol|wmaximum|
+        wminimum|wontop|woutput|wparent|wread|wrows|wtitle|wvisible|
+        xmltocursor|year
+        )(?=\s*\()
+      </match>
+    </context>
+
+    <!-- ===================== Objects & system variables ===================== -->
+
+    <context id="builtin-objects" style-ref="builtin-var" class="no-spell-check">
+      <match extended="true">
+        (?i)(?&lt;![\w.])(?:
+        this|thisform|thisformset|_screen|_vfp|_tally|_curobj|_pretext|
+        _text|_wrap|_lmargin|_rmargin|_indent|_alignment|_box|_padvance|
+        _pageno|_plength|_ploffset|_pcopies|_pdparms|_pscode|_peject|
+        _pbpage|_pepage|_pform|_pspacing|_ascicols|_asciirows|_cliptext|
+        _dblclick|_diarydate|_foxdoc|_gengraph|_genmenu|_genpd|_genscrn|
+        _genxtab|_getexpr|_include|_mac|_mline|_padvance|_rmargin|_shell|
+        _smartmenu|_startup|_stdmenu|_throttle|_transport|_triggerlevel|
+        _unix|_windows|_wizard|_workspace
+        )(?!\w)
+      </match>
+    </context>
+
+    <!-- ===================== Keywords: flow control & structure ===================== -->
+
+    <context id="keywords" style-ref="keyword" class="no-spell-check">
+      <match extended="true">
+        (?i)(?&lt;![\w.])(?:
+        if|else|elseif|endif|iif|do|while|enddo|case|otherwise|endcase|for|
+        endfor|next|each|scan|endscan|to|step|loop|exit|return|cancel|quit|
+        try|catch|finally|endtry|throw|with|endwith|define|class|enddefine|
+        function|endfunc|procedure|endproc|parameters|lparameters|parameter|
+        lparameter|local|private|public|protected|hidden|dimension|declare|
+        external|array|as|of|in|from|where|into|by|all|off|on|nodefault|
+        addobject|newobject|events|setall|release|endscan|then|is|like|
+        between|exists|having|group|order|distinct|top|values|union|join|
+        inner|outer|full|unique|primary|key|foreign|references|check|default|
+        begin|end|transaction|rollback|commit|
+        tag|alias|shared|exclusive|again|noupdate|noconsole|nowait|noshow|nodata|nomenu|norequery|nofilter|rest|record|bottom|ascending|descending|except|memvar|structure|extended|delimited|sdf|csv|xls|type|ascii|append|excl|top
+        )(?!\w)
+      </match>
+    </context>
+
+    <!-- ===================== Commands ===================== -->
+
+    <context id="print-command" style-ref="command">
+      <match>^[ \t]*(?:\?{1,3}|@)</match>
+    </context>
+
+    <context id="say-get-clauses" style-ref="keyword" class="no-spell-check">
+      <match>(?i)(?&lt;![\w.])(?:say|get)(?!\w)</match>
+    </context>
+
+    <context id="set-on-statement" class="no-spell-check">
+      <match>(?i)^[ \t]*(set|on)[ \t]+(\w+)</match>
+      <include>
+        <context sub-pattern="1" style-ref="command"/>
+        <context sub-pattern="2" style-ref="keyword"/>
+      </include>
+    </context>
+
+    <context id="compound-command" class="no-spell-check">
+      <match extended="true">
+        (?i)^[ \t]*(?:(crea(?:t(?:e)?)?|modi(?:f(?:y)?)?|clos(?:e)?|clea(?:r)?|rele(?:a(?:s(?:e)?)?)?|alte(?:r)?|drop|open|acti(?:v(?:a(?:t(?:e)?)?)?)?|deac(?:t(?:i(?:v(?:a(?:t(?:e)?)?)?)?)?)?|hide|show|push|pop|read|decl(?:a(?:r(?:e)?)?)?|defi(?:n(?:e)?)?|move|zoom|rest(?:o(?:r(?:e)?)?)?|save))[ \t]+(?:(all|even(?:t(?:s)?)?|data(?:b(?:a(?:s(?:e(?:s)?)?)?)?)?|data(?:b(?:a(?:s(?:e)?)?)?)?|tabl(?:e(?:s)?)?|tabl(?:e)?|curs(?:o(?:r)?)?|form|clas(?:s)?|clas(?:s(?:l(?:i(?:b)?)?)?)?|proc(?:e(?:d(?:u(?:r(?:e)?)?)?)?)?|libr(?:a(?:r(?:y)?)?)?|menu|popu(?:p)?|wind(?:o(?:w)?)?|scre(?:e(?:n)?)?|memo(?:r(?:y)?)?|prog(?:r(?:a(?:m)?)?)?|prog(?:r(?:a(?:m(?:s)?)?)?)?|macr(?:o(?:s)?)?|dlls|fiel(?:d(?:s)?)?|gets|type(?:a(?:h(?:e(?:a(?:d)?)?)?)?)?|view|inde(?:x)?|repo(?:r(?:t)?)?|labe(?:l)?|quer(?:y)?|proj(?:e(?:c(?:t)?)?)?|file|comm(?:a(?:n(?:d)?)?)?|stru(?:c(?:t(?:u(?:r(?:e)?)?)?)?)?|conn(?:e(?:c(?:t(?:i(?:o(?:n)?)?)?)?)?)?|sql|trig(?:g(?:e(?:r)?)?)?|defa(?:u(?:l(?:t)?)?)?|prim(?:a(?:r(?:y)?)?)?|key|cons(?:t(?:r(?:a(?:i(?:n(?:t)?)?)?)?)?)?|colu(?:m(?:n)?)?|rule|sche(?:m(?:a)?)?|alte(?:r(?:n(?:a(?:t(?:e)?)?)?)?)?|stat(?:u(?:s)?)?|help|wind(?:o(?:w(?:s)?)?)?|bar|pad|pads|popu(?:p(?:s)?)?|menu(?:s)?|obje(?:c(?:t)?)?|obje(?:c(?:t(?:s)?)?)?))(?![\w.])
+      </match>
+      <include>
+        <context sub-pattern="1" style-ref="command"/>
+        <context sub-pattern="2" style-ref="keyword"/>
+      </include>
+    </context>
+
+    <context id="commands" style-ref="command" class="no-spell-check">
+      <match extended="true">
+        (?i)^[ \t]*(?:acce(?:p(?:t)?)?|acti(?:v(?:a(?:t(?:e)?)?)?)?|alte(?:r)?|appe(?:n(?:d)?)?|asse(?:r(?:t)?)?|aver(?:a(?:g(?:e)?)?)?|begi(?:n)?|blan(?:k)?|brow(?:s(?:e)?)?|buil(?:d)?|calc(?:u(?:l(?:a(?:t(?:e)?)?)?)?)?|call|canc(?:e(?:l)?)?|cd|chdi(?:r)?|clea(?:r)?|clos(?:e)?|comm(?:i(?:t)?)?|comp(?:i(?:l(?:e)?)?)?|cont(?:i(?:n(?:u(?:e)?)?)?)?|copy|coun(?:t)?|crea(?:t(?:e)?)?|deac(?:t(?:i(?:v(?:a(?:t(?:e)?)?)?)?)?)?|debu(?:g)?|decl(?:a(?:r(?:e)?)?)?|defi(?:n(?:e)?)?|dele(?:t(?:e)?)?|dime(?:n(?:s(?:i(?:o(?:n)?)?)?)?)?|dir|dire(?:c(?:t(?:o(?:r(?:y)?)?)?)?)?|disp(?:l(?:a(?:y)?)?)?|do|doev(?:e(?:n(?:t(?:s)?)?)?)?|drop|edit|ejec(?:t)?|eras(?:e)?|expo(?:r(?:t)?)?|find|flus(?:h)?|gath(?:e(?:r)?)?|gete(?:x(?:p(?:r)?)?)?|go|goto|help|hide|impo(?:r(?:t)?)?|inde(?:x)?|inpu(?:t)?|inse(?:r(?:t)?)?|join|keyb(?:o(?:a(?:r(?:d)?)?)?)?|labe(?:l)?|list|load|loca(?:l)?|loca(?:t(?:e)?)?|lpar(?:a(?:m(?:e(?:t(?:e(?:r(?:s)?)?)?)?)?)?)?|md|mkdi(?:r)?|modi(?:f(?:y)?)?|move|open|pack|para(?:m(?:e(?:t(?:e(?:r(?:s)?)?)?)?)?)?|pop|play|prin(?:t(?:j(?:o(?:b)?)?)?)?|endp(?:r(?:i(?:n(?:t(?:j(?:o(?:b)?)?)?)?)?)?)?|priv(?:a(?:t(?:e)?)?)?|proc(?:e(?:d(?:u(?:r(?:e)?)?)?)?)?|publ(?:i(?:c)?)?|push|quit|rd|read|reca(?:l(?:l)?)?|regi(?:o(?:n(?:a(?:l)?)?)?)?|rein(?:d(?:e(?:x)?)?)?|rele(?:a(?:s(?:e)?)?)?|rena(?:m(?:e)?)?|repl(?:a(?:c(?:e)?)?)?|repo(?:r(?:t)?)?|rest(?:o(?:r(?:e)?)?)?|resu(?:m(?:e)?)?|retr(?:y)?|retu(?:r(?:n)?)?|rmdi(?:r)?|roll(?:b(?:a(?:c(?:k)?)?)?)?|run|save|scat(?:t(?:e(?:r)?)?)?|scan|seek|sele(?:c(?:t)?)?|show|skip|sort|stor(?:e)?|sum|susp(?:e(?:n(?:d)?)?)?|tota(?:l)?|type|unlo(?:c(?:k)?)?|upda(?:t(?:e)?)?|use|vali(?:d(?:a(?:t(?:e)?)?)?)?|wait|zap|zoom)(?![\w.])
+      </match>
+    </context>
+
+    <!-- ===================== Base classes (after DEFINE CLASS .. AS handled above) ===================== -->
+
+    <context id="base-classes" style-ref="type" class="no-spell-check">
+      <match extended="true">
+        (?i)(?&lt;![\w.])(?:
+        custom|container|control|commandbutton|commandgroup|checkbox|combobox|
+        listbox|textbox|editbox|grid|column|image|shape|spinner|optiongroup|
+        optionbutton|pageframe|session|collection|dataenvironment|
+        cursoradapter|xmladapter|xmlfield|xmltable|hyperlinkbutton|
+        olecontrol|olebound|exception
+        )(?!\w)
+      </match>
+    </context>
+
+    <!-- ===================== Misc ===================== -->
+
+    <!-- &cVar  or  &cVar.  -->
+    <context id="macro-substitution" style-ref="macro">
+      <match>&amp;[A-Za-z_]\w*\.?</match>
+    </context>
+
+    <!-- ; at end of line = continuation -->
+    <context id="line-continuation" style-ref="continuation">
+      <match>;[ \t\r]*$</match>
+    </context>
+
+    <context id="operators" style-ref="operator">
+      <match>&lt;&gt;|!=|==|&lt;=|&gt;=|-&gt;|\*\*|[-+*/^%=&lt;&gt;!#$]</match>
+    </context>
+
+    <!-- ===================== Main context ===================== -->
+
+    <context id="foxpro">
+      <include>
+        <context ref="line-comment"/>
+        <context ref="star-comment"/>
+        <context ref="note-comment"/>
+        <context ref="text-block"/>
+        <context ref="string-double"/>
+        <context ref="string-single"/>
+        <context ref="preprocessor"/>
+        <context ref="date-literal"/>
+        <context ref="logical-constant"/>
+        <context ref="null-constant"/>
+        <context ref="logical-operator"/>
+        <context ref="class-definition"/>
+        <context ref="function-definition"/>
+        <context ref="print-command"/>
+        <context ref="set-on-statement"/>
+        <context ref="compound-command"/>
+        <context ref="commands"/>
+        <context ref="functions"/>
+        <context ref="builtin-objects"/>
+        <context ref="say-get-clauses"/>
+        <context ref="keywords"/>
+        <context ref="base-classes"/>
+        <context ref="hex-number"/>
+        <context ref="number"/>
+        <context ref="macro-substitution"/>
+        <context ref="line-continuation"/>
+        <context ref="operators"/>
+      </include>
+    </context>
+
+  </definitions>
+</language>
